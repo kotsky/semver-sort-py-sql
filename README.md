@@ -50,10 +50,10 @@ SELECT * FROM table_version ORDER BY INET_ATON(SUBSTRING_INDEX(CONCAT(version_pr
 
 To satisfy a property ``1.0.0-alpha < 1.0.0 & 1.0.0-1 < 1.0.0``, we have to fill up the new fields accordingly as shown on the picture below:
 
-![Picture](https://github.com/kotsky/semver-sort-py-sql/blob/master/pics/initial_table.png)
+![Picture](https://github.com/kotsky/semver-sort-py-sql/blob/main/pics/initial_table.png)
 
 Once we apply the query above, we get:
 
-![Picture](https://github.com/kotsky/semver-sort-py-sql/blob/master/pics/sorted_table.png)
+![Picture](https://github.com/kotsky/semver-sort-py-sql/blob/main/pics/sorted_table.png)
 
 To help to split initial semantic version vX.Y.Z-prerelease-build, [python script]((https://github.com/kotsky/semver-sort-py-sql/blob/master/parsing_script.py)) is presented.
