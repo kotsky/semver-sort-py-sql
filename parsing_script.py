@@ -16,7 +16,6 @@ MAX_BUILD_WORD_LENGTH = 60  # VARCHAR(60) in DB: assuming max SemVer length is 6
 
 def transform_version(_version: str) -> tuple:
 
-    # TODO delete once Ok
     """
     transform_version(version) gives prefix, prerelease_word, prerelease_number, build, which we then use as follows:
     SELECT * FROM tf_module_version ORDER BY INET_ATON(SUBSTRING_INDEX(CONCAT(version_prefix,'.0.0.0'),'.',4)),
