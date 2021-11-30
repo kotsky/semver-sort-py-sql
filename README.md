@@ -20,11 +20,31 @@ SQL itself doesn't support a proper sorting as well. But there is a solution as 
 
 The query above works good with formats X.Y.Z, but it doesn’t work with vX.Y.Z-prerelease+build. 
 
-
-
-
 To support that kind of cases, we have to split prerelease and build on different columns and do sorting.
+To work around that we can use the following queery:
 
+```
+SELECT * FROM table_of_versions ORDER BY
+    INET_ATON(
+        SUBSTRING_INDEX(
+            CONCAT(
+                SUBSTRING_INDEX(
+                    SUBSTRING_INDEX(version, '+', 1), '-', 1),'.0.0.0')
+                ,'.',4)
+            ),
+    IF(
+        LENGTH(version) = LENGTH(SUBSTRING_INDEX(SUBSTRING_INDEX(SUBSTRING_INDEX(version, '+', 1), '-', 2), '-', -1)),
+            "~", SUBSTRING_INDEX(
+                    SUBSTRING_INDEX(
+                        SUBSTRING_INDEX(version, '+', 1), '-', 2), '-', -1)
+    ) DESC,
+    SUBSTRING_INDEX(
+        SUBSTRING_INDEX(version, '+', 2), '+', -1);
+```
+That works fine, but 1.0.0+build < 1.0.0 and 1.0.0-aplha not always smaller that 1.0.0-alpha2, which is not correct.
+
+
+With python help, we can fulfil additional columns prerelease and build for a proper semver sorting.
 Then, prerelease can contain various numbers in formats like X.Y.Z-wordNumber+build like v1.2.3-alpha10. To do a proper sorting and to support 1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2 < 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0 we have to split prerelease onto 2 columns word and number.
 
  
