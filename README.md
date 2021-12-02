@@ -41,6 +41,79 @@ SELECT * FROM table_of_versions ORDER BY
     SUBSTRING_INDEX(
         SUBSTRING_INDEX(version, '+', 2), '+', -1);
 ```
+
+Py peewee implementation:
+```
+def SUBSTRING_INDEX(
+    expression: tp.Union[str, peewee.SQL], delimiter: str, count: int
+) -> peewee.SQL:
+    """String implementing SUBSTRING_INDEX SQL function only for MySQL"""
+    if isinstance(expression, peewee.SQL):
+        expression = expression.sql
+    return peewee.SQL(f"SUBSTRING_INDEX({expression}, {delimiter}, {count})")
+
+
+def ORDER_BY_SEMVER(version_field_name: str, direction: tp.Optional[str] = "ASC") -> list:
+    """
+        Implementing SemVer sorting through MySQL.
+        The function splits semver onto 3 parts: X.Y.Z, prerelease and build.
+        Then, sort query is built in order X.Y.Z, prerelease and build.
+        If version hasn't prerelease, we treat it with prerelease = '~' to
+        follow 1.0.0-alpha < 1.0.0.
+        Take a note that 1.0.0+build2021 < 1.0.0-alpha, which doesn't follow SemVer
+    """
+    xyz_prerelease_part_sql = SUBSTRING_INDEX(version_field_name, "'+'", 1)
+    build_part_sql = SUBSTRING_INDEX(SUBSTRING_INDEX(version_field_name, "'+'", 2), "'+'", -1)
+    xyz_part_sql = SUBSTRING_INDEX(xyz_prerelease_part_sql, "'-'", 1)
+    prerelease_part_sql = SUBSTRING_INDEX(
+        SUBSTRING_INDEX(xyz_prerelease_part_sql, "'-'", 2), "'-'", -1
+    )
+
+    concat = peewee.fn.CONCAT(f"{xyz_part_sql.sql},'.0.0.0'")
+    concat_build = f"{concat.name}({concat.arguments[0]})"
+
+    major_minor_patch_order_by = peewee.Ordering(
+        peewee.fn.INET_ATON(SUBSTRING_INDEX(concat_build, "'.'", 4)), direction,
+    )
+
+    # if format is only X.Y.Z, we assign it as '~' to follow semver sorting
+    prerelease_query = peewee.SQL(
+        "IF("
+        f"LENGTH({version_field_name}) = LENGTH({prerelease_part_sql.sql}), "
+        f"'~', {prerelease_part_sql.sql})"
+    )
+
+    prerelease_order_by = peewee.Ordering(prerelease_query, direction,)
+
+    build_order_by = peewee.Ordering(build_part_sql, direction,)
+
+    order_by = [major_minor_patch_order_by, prerelease_order_by, build_order_by]
+
+    return order_by
+
+
+def main():
+    
+    sort_criteria = [("version", "DESC"), ("created_at", "DESC")]
+    query = model.select()
+    
+    for i, criteria in enumerate(sort_criteria):
+        if criteria.node.name == "version":  # sort by semver
+            semver_order_by = ORDER_BY_SEMVER(
+                criteria.node.name, criteria.direction
+            )
+            sort_criteria.remove(criteria)
+            for j, order_by in enumerate(semver_order_by):
+                sort_criteria.insert(i + j, order_by)
+            break
+
+    query = query.order_by(*sort_criteria)
+    
+    result = []
+    for raw in query:
+        result.append(raw)
+```
+
 That works fine, but 1.0.0+build < 1.0.0 and 1.0.0-aplha not always smaller that 1.0.0-alpha2, which is not correct.
 
 
