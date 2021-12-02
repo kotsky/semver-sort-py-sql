@@ -114,13 +114,10 @@ def main():
         result.append(raw)
 ```
 
-That works fine, but 1.0.0+build < 1.0.0 and 1.0.0-aplha not always smaller that 1.0.0-alpha2, which is not correct.
+That works fine, but 1.0.0+build < 1.0.0 and 1.0.0-aplha not always smaller that 1.0.0-alpha2.
 
-
-With python help, we can fulfil additional columns prerelease and build for a proper semver sorting.
+Another way - we can fulfil additional columns prerelease and build for a proper semver sorting.
 Then, prerelease can contain various numbers in formats like X.Y.Z-wordNumber+build like v1.2.3-alpha10. To do a proper sorting and to support 1.0.0-alpha < 1.0.0-alpha.1 < 1.0.0-alpha.beta < 1.0.0-beta < 1.0.0-beta.2 < 1.0.0-beta.11 < 1.0.0-rc.1 < 1.0.0 we have to split prerelease onto 2 columns word and number.
-
- 
 
                                                         V1.10.1-alpha10+build2001231
 
